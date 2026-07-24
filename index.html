@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>We The Wave</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #070810; --surface: #0e1018; --surface2: #141620;
+  --border: #1c1f2e; --border2: #252836; --text: #e8eaf2; --muted: #4a5070;
+  --gold: #c9a84c; --gold-dim: #1e1608; --green: #22c55e; --green-dim: #041f0f;
+  --red: #ef4444; --red-dim: #200808; --yellow: #f59e0b;
+}
+body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; min-height:100vh; max-width:480px; margin:0 auto; padding-bottom:80px; }
+.header { padding:18px 20px 14px; background:var(--bg); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:20; }
+.header-row { display:flex; justify-content:space-between; align-items:center; }
+.brand { font-size:16px; font-weight:900; color:var(--gold); letter-spacing:0.04em; }
+.xp-pill { background:var(--gold-dim); border:1px solid var(--gold); border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700; color:var(--gold); }
+.header-date { font-size:11px; color:var(--muted); margin-top:4px; }
+.bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; background:var(--surface); border-top:1px solid var(--border); display:flex; z-index:20; }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; padding:10px 4px 12px; cursor:pointer; color:var(--muted); font-size:10px; gap:4px; transition:color 0.15s; }
+.nav-item.active { color:var(--gold); }
+.nav-icon { font-size:20px; line-height:1; }
+.page { display:none; padding:16px; }
+.page.active { display:block; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:12px; }
+.card-label { font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+.lean { border-radius:16px; padding:18px; margin-bottom:12px; border:1px solid var(--border2); }
+.lean.bullish { background:var(--green-dim); border-color:var(--green); }
+.lean.bearish { background:var(--red-dim); border-color:var(--red); }
+.lean.neutral, .lean.loading { background:var(--surface); border-color:var(--border2); }
+.lean-title { font-size:17px; font-weight:800; margin-bottom:4px; }
+.lean.bullish .lean-title { color:var(--green); }
+.lean.bearish .lean-title { color:var(--red); }
+.lean.neutral .lean-title, .lean.loading .lean-title { color:var(--muted); }
+.lean-sub { font-size:13px; color:var(--muted); line-height:1.5; }
+.event { padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+.event:last-child { border-bottom:none; }
+.event-main { display:flex; align-items:center; gap:8px; }
+.impact { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.impact.high { background:var(--red); } .impact.medium { background:var(--yellow); }
+.event-cur { font-size:11px; font-weight:800; color:var(--gold); width:28px; }
+.event-name { font-size:13px; font-weight:600; flex:1; }
+.event-time { font-size:11px; color:var(--muted); }
+.event-sig { font-size:11px; font-weight:700; margin-top:6px; margin-left:44px; }
+.event-sig.bullish { color:var(--green); } .event-sig.bearish { color:var(--red); } .event-sig.pending,.event-sig.neutral { color:var(--muted); }
+.event-expand { display:none; margin-top:10px; margin-left:44px; }
+.event-expand.show { display:block; }
+.nums-row { display:flex; gap:16px; margin-bottom:8px; }
+.num-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; margin-bottom:2px; }
+.num-val { font-size:14px; font-weight:700; }
+.num-val.up { color:var(--green); } .num-val.dn { color:var(--red); } .num-val.nd { color:var(--muted); font-style:italic; }
+.plain-box { background:var(--border); border-radius:8px; padding:10px 12px; font-size:12px; color:var(--muted); line-height:1.5; }
+.chk-row { display:flex; align-items:flex-start; gap:12px; padding:13px 0; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+.chk-row:last-child { border-bottom:none; }
+.chk-box { width:24px; height:24px; border-radius:7px; border:2px solid var(--border2); flex-shrink:0; margin-top:1px; position:relative; transition:all 0.15s; }
+.chk-box::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-62%) rotate(45deg); width:6px; height:10px; border-right:2.5px solid white; border-bottom:2.5px solid white; opacity:0; transition:opacity 0.1s; }
+.chk-row.on .chk-box { background:var(--green); border-color:var(--green); }
+.chk-row.on .chk-box::after { opacity:1; }
+.chk-row.on .chk-title { color:var(--green); }
+.chk-title { font-size:14px; font-weight:600; color:var(--text); }
+.chk-sub { font-size:12px; color:var(--muted); margin-top:2px; line-height:1.4; }
+.verdict { border-radius:12px; padding:14px; margin-top:12px; display:none; }
+.verdict.show { display:block; }
+.verdict.go { background:var(--green-dim); border:1px solid var(--green); }
+.verdict.hold { background:var(--surface2); border:1px solid var(--border2); }
+.verdict-title { font-size:15px; font-weight:700; margin-bottom:3px; }
+.verdict.go .verdict-title { color:var(--green); }
+.verdict.hold .verdict-title { color:var(--muted); }
+.verdict-sub { font-size:12px; color:var(--muted); }
+.field { background:var(--surface2); border:1px solid var(--border2); border-radius:10px; padding:11px 14px; color:var(--text); font-size:14px; outline:none; width:100%; margin-bottom:10px; }
+.field:focus { border-color:var(--gold); }
+.field::placeholder { color:var(--muted); }
+select.field option { background:#1c1f2e; }
+.row2 { display:flex; gap:8px; margin-bottom:10px; }
+.row2 .field { margin-bottom:0; }
+.upload-zone { border:2px dashed var(--border2); border-radius:12px; padding:24px; text-align:center; cursor:pointer; margin-bottom:10px; }
+.upload-zone.has-file { border-color:var(--green); border-style:solid; }
+.upload-icon { font-size:26px; margin-bottom:6px; }
+.upload-text { font-size:13px; color:var(--muted); }
+.upload-name { font-size:12px; color:var(--green); margin-top:4px; font-weight:600; }
+.ai-box { background:var(--surface2); border-radius:10px; padding:12px; font-size:13px; color:var(--text); line-height:1.6; display:none; margin-top:8px; }
+.ai-box.show { display:block; }
+.ai-box-label { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); margin-bottom:6px; }
+.btn { width:100%; padding:15px; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; border:none; margin-top:4px; }
+.btn-gold { background:var(--gold); color:#000; }
+.btn-gold:disabled { opacity:0.3; cursor:not-allowed; }
+.btn-ghost { background:transparent; border:1px solid var(--border2); color:var(--muted); font-size:13px; }
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+.stat-box { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 8px; text-align:center; }
+.stat-val { font-size:22px; font-weight:800; }
+.stat-val.g { color:var(--green); } .stat-val.r { color:var(--red); }
+.stat-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-top:3px; }
+.trade-item { padding:14px 0; border-bottom:1px solid var(--border); }
+.trade-item:last-child { border-bottom:none; }
+.trade-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.trade-pair { font-size:15px; font-weight:700; }
+.trade-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
+.trade-badge.WIN { background:var(--green-dim); color:var(--green); }
+.trade-badge.LOSS { background:var(--red-dim); color:var(--red); }
+.trade-badge.OPEN { background:var(--gold-dim); color:var(--gold); }
+.trade-meta { font-size:12px; color:var(--muted); margin-bottom:6px; }
+.check-dots { display:flex; gap:4px; align-items:center; }
+.dot { width:7px; height:7px; border-radius:50%; }
+.dot.on { background:var(--green); } .dot.off { background:var(--border2); }
+.dot-label { font-size:11px; color:var(--muted); margin-left:6px; }
+.trade-ai { font-size:12px; color:var(--muted); font-style:italic; line-height:1.5; border-left:2px solid var(--border2); padding-left:10px; margin-top:8px; }
+.quick-wrap { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.quick-pill { padding:7px 12px; background:var(--surface2); border:1px solid var(--border2); border-radius:20px; font-size:12px; color:var(--muted); cursor:pointer; }
+.ask-row { display:flex; gap:8px; margin-bottom:8px; }
+.ask-input { flex:1; background:var(--surface2); border:1px solid var(--border2); border-radius:10px; padding:11px 14px; color:var(--text); font-size:14px; outline:none; }
+.ask-input:focus { border-color:var(--gold); }
+.ask-btn { padding:11px 16px; background:var(--gold); color:#000; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; }
+.refresh-btn { display:inline-flex; align-items:center; gap:6px; background:transparent; border:1px solid var(--border2); border-radius:8px; color:var(--muted); font-size:12px; padding:6px 12px; cursor:pointer; margin-bottom:12px; }
+.spin { width:14px; height:14px; border:2px solid var(--border2); border-top-color:var(--gold); border-radius:50%; animation:rot 0.7s linear infinite; display:inline-block; vertical-align:middle; margin-right:6px; }
+@keyframes rot { to { transform:rotate(360deg); } }
+.toast { position:fixed; bottom:88px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--gold); color:#000; font-size:13px; font-weight:700; padding:10px 20px; border-radius:30px; opacity:0; transition:all 0.25s; z-index:100; white-space:nowrap; pointer-events:none; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.empty { text-align:center; padding:28px 16px; color:var(--muted); font-size:14px; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div class="brand">〰 We The Wave</div>
+    <div class="xp-pill" id="xpPill">0 XP</div>
+  </div>
+  <div class="header-date" id="headerDate"></div>
+</div>
+
+<!-- NEWS -->
+<div class="page active" id="page-news">
+  <div id="leanCard" class="lean loading" style="margin-top:12px;">
+    <div class="lean-title"><span class="spin"></span> Loading...</div>
+    <div class="lean-sub">Fetching today's events</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Today's Events</div>
+    <button class="refresh-btn" onclick="loadCalendar()">🔄 Refresh</button>
+    <div id="eventsList"><div class="empty"><span class="spin"></span></div></div>
+  </div>
+</div>
+
+<!-- CHECKLIST -->
+<div class="page" id="page-check">
+  <div class="card" style="margin-top:12px;">
+    <div class="card-label">Pre-Trade Checklist</div>
+    <div class="chk-row" onclick="toggleChk(this)">
+      <div class="chk-box"></div>
+      <div><div class="chk-title">News confirms direction</div><div class="chk-sub">A high-impact event supports where I want to trade today</div></div>
+    </div>
+    <div class="chk-row" onclick="toggleChk(this)">
+      <div class="chk-box"></div>
+      <div><div class="chk-title">I understand expected vs actual</div><div class="chk-sub">Better than expected = currency up · Worse = currency down</div></div>
+    </div>
+    <div class="chk-row" onclick="toggleChk(this)">
+      <div class="chk-box"></div>
+      <div><div class="chk-title">Chart trend agrees</div><div class="chk-sub">Price already moving the direction news supports</div></div>
+    </div>
+    <div class="chk-row" onclick="toggleChk(this)">
+      <div class="chk-box"></div>
+      <div><div class="chk-title">Clear entry level identified</div><div class="chk-sub">Support or resistance zone — not entering blind</div></div>
+    </div>
+    <div class="chk-row" onclick="toggleChk(this)">
+      <div class="chk-box"></div>
+      <div><div class="chk-title">Stop loss is set</div><div class="chk-sub">If wrong, I know exactly where I'm out</div></div>
+    </div>
+    <div class="verdict go" id="vGo"><div class="verdict-title">✅ Cleared to trade</div><div class="verdict-sub">All conditions met. Execute with discipline.</div></div>
+    <div class="verdict hold" id="vHold"><div class="verdict-title">⏳ Not yet</div><div class="verdict-sub">Complete all 5 checks first.</div></div>
+  </div>
+  <button class="btn btn-gold" id="goTradeBtn" onclick="switchPage('log')" disabled>Log This Trade →</button>
+</div>
+
+<!-- LOG -->
+<div class="page" id="page-log">
+  <div class="card" style="margin-top:12px;">
+    <div class="card-label">Trade Details</div>
+    <div class="row2"><input class="field" id="fPair" placeholder="Pair (e.g. EURUSD)" /><select class="field" id="fDir"><option value="">Dir</option><option>BUY</option><option>SELL</option></select></div>
+    <div class="row2"><input class="field" id="fEntry" placeholder="Entry" type="number" step="0.00001" /><input class="field" id="fSL" placeholder="Stop Loss" type="number" step="0.00001" /></div>
+    <div class="row2"><input class="field" id="fTP" placeholder="Take Profit" type="number" step="0.00001" /><input class="field" id="fClose" placeholder="Close Price" type="number" step="0.00001" /></div>
+    <select class="field" id="fResult"><option value="">Result</option><option value="WIN">WIN</option><option value="LOSS">LOSS</option><option value="OPEN">Still Open</option></select>
+    <input class="field" id="fNews" placeholder="News event (e.g. CPI, NFP)" />
+    <input class="field" id="fNotes" placeholder="Notes (optional)" />
+  </div>
+  <div class="card">
+    <div class="card-label">Screenshot</div>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📸</div>
+      <div class="upload-text">Tap to upload trade screenshot</div>
+      <div class="upload-name" id="uploadName"></div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(this)" />
+    <div class="ai-box" id="aiBox"><div class="ai-box-label">AI Coach Feedback</div><div id="aiText"></div></div>
+  </div>
+  <button class="btn btn-gold" onclick="submitTrade()">Analyze & Save Trade</button>
+  <button class="btn btn-ghost" style="margin-top:8px;" onclick="switchPage('check')">← Back to Checklist</button>
+</div>
+
+<!-- JOURNAL -->
+<div class="page" id="page-journal">
+  <div class="stats-grid" style="margin-top:12px;">
+    <div class="stat-box"><div class="stat-val" id="sTrades">0</div><div class="stat-lbl">Trades</div></div>
+    <div class="stat-box"><div class="stat-val g" id="sWins">0</div><div class="stat-lbl">Wins</div></div>
+    <div class="stat-box"><div class="stat-val r" id="sLosses">0</div><div class="stat-lbl">Losses</div></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Trade History</div>
+    <div id="tradeList"><div class="empty">No trades yet.<br>Complete the checklist and log your first trade.</div></div>
+  </div>
+  <button class="btn btn-ghost" onclick="exportCSV()">Export for Reconciliation</button>
+</div>
+
+<!-- ASK -->
+<div class="page" id="page-ask">
+  <div class="card" style="margin-top:12px;">
+    <div class="card-label">Ask About Any Event</div>
+    <div class="quick-wrap">
+      <div class="quick-pill" onclick="quickAsk('What is NFP and how does it affect EURUSD?')">NFP?</div>
+      <div class="quick-pill" onclick="quickAsk('What is CPI and how does it move USD pairs?')">CPI?</div>
+      <div class="quick-pill" onclick="quickAsk('How do interest rate decisions affect forex?')">Rates?</div>
+      <div class="quick-pill" onclick="quickAsk('What does better than expected mean in forex?')">Better vs Worse?</div>
+      <div class="quick-pill" onclick="quickAsk('Best time to trade news in Quebec EST timezone?')">Best time?</div>
+      <div class="quick-pill" onclick="quickAsk('What is a stop loss and why is it non-negotiable?')">Stop Loss?</div>
+    </div>
+    <div class="ask-row">
+      <input class="ask-input" id="askQ" placeholder="Ask anything..." />
+      <button class="ask-btn" onclick="doAsk()">→</button>
+    </div>
+    <div class="ai-box" id="askBox"><div class="ai-box-label">Answer</div><div id="askText"></div></div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchPage('news')" id="nav-news"><div class="nav-icon">📰</div>News</div>
+  <div class="nav-item" onclick="switchPage('check')" id="nav-check"><div class="nav-icon">✅</div>Checklist</div>
+  <div class="nav-item" onclick="switchPage('log')" id="nav-log"><div class="nav-icon">📝</div>Log Trade</div>
+  <div class="nav-item" onclick="switchPage('journal')" id="nav-journal"><div class="nav-icon">📊</div>Journal</div>
+  <div class="nav-item" onclick="switchPage('ask')" id="nav-ask"><div class="nav-icon">💬</div>Ask AI</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const FINNHUB='d9hlsbpr01qjmfd9gqfgd9hlsbpr01qjmfd9gqg0';
+const SHEET_URL='https://script.google.com/macros/s/AKfycby2J1Hfnd_afl-q7B3Gjwr6SW7N2fkEiaJmZxf3JCQkYUkO1TmhkUJ8adddyEQA9gij_Q/exec';
+let xp=parseInt(localStorage.getItem('wtw_xp')||'0');
+let trades=JSON.parse(localStorage.getItem('wtw_trades')||'[]');
+let checkState=[];
+let pendingFile=null;
+
+document.getElementById('headerDate').textContent=new Date().toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+renderXP();loadCalendar();
+
+function renderXP(){document.getElementById('xpPill').textContent=xp+' XP';localStorage.setItem('wtw_xp',xp);}
+function addXP(n){xp+=n;renderXP();showToast('+'+n+' XP 🔥');}
+
+function switchPage(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('nav-'+p).classList.add('active');
+  if(p==='journal')renderJournal();
+}
+
+const EXPLAIN={
+  'non-farm':'US job numbers. More jobs than expected = USD up. Less = USD down.',
+  'nfp':'US jobs report. Beats forecast = USD up. Misses = USD down. Biggest mover of the month.',
+  'cpi':'Inflation. Higher than expected = USD up. Lower = USD down.',
+  'interest rate':'Rate decision. Hike = currency up. Cut = currency down.',
+  'gdp':'Economic output. Beats = currency up. Misses = currency down.',
+  'unemployment':'Less unemployed than expected = good = currency up.',
+  'retail sales':'Consumer spending. Better = currency up.',
+  'pmi':'Above 50 = growing = up. Below 50 = shrinking = down.',
+  'ppi':'Wholesale inflation. Higher = USD up.',
+  'fomc':'Fed minutes. Hawkish = USD up. Dovish = USD down.',
+  'ism':'Business activity. Above 50 = expanding = currency up.',
+};
+function getExp(n){const l=(n||'').toLowerCase();for(const k of Object.keys(EXPLAIN)){if(l.includes(k))return EXPLAIN[k];}return 'Compare actual vs forecast. Better = currency up. Worse = currency down.';}
+function sig(a,e){if(a===null||a===undefined||a==='')return 'pending';const av=parseFloat(String(a).replace(/[%K]/g,''));const ev=parseFloat(String(e||'').replace(/[%K]/g,''));if(isNaN(av)||isNaN(ev))return 'neutral';return av>ev?'bullish':av<ev?'bearish':'neutral';}
+
+async function loadCalendar(){
+  document.getElementById('eventsList').innerHTML='<div class="empty"><span class="spin"></span></div>';
+  try{
+    const d=new Date().toISOString().split('T')[0];
+    const r=await fetch(`https://finnhub.io/api/v1/calendar/economic?from=${d}&to=${d}&token=${FINNHUB}`);
+    const data=await r.json();
+    const events=(data.economicCalendar||[]).filter(e=>e.impact==='high'||e.impact==='medium');
+    if(!events.length){document.getElementById('eventsList').innerHTML='<div class="empty">No high-impact events today.<br>Low volatility — consider sitting out.</div>';renderLean([]);}
+    else{renderEvents(events);renderLean(events);}
+  }catch(e){document.getElementById('eventsList').innerHTML='<div class="empty">Could not load. Check connection and refresh.</div>';renderLean([]);}
+}
+
+function renderEvents(events){
+  document.getElementById('eventsList').innerHTML=events.map((e,i)=>{
+    const s=sig(e.actual,e.estimate);
+    const ic=e.impact==='high'?'high':'medium';
+    const sl=s==='bullish'?'📈 Up':s==='bearish'?'📉 Down':s==='pending'?'⏳ Pending':'➡️ Neutral';
+    const ac=s==='bullish'?'up':s==='bearish'?'dn':'nd';
+    return`<div class="event" onclick="toggleEvt(${i})">
+      <div class="event-main"><div class="impact ${ic}"></div><span class="event-cur">${e.country||'—'}</span><span class="event-name">${e.event}</span><span class="event-time">${e.time||''}</span></div>
+      <div class="event-sig ${s}">${sl}</div>
+      <div class="event-expand" id="evt-${i}">
+        <div class="nums-row">
+          <div><div class="num-lbl">Forecast</div><div class="num-val">${e.estimate??'—'}</div></div>
+          <div><div class="num-lbl">Actual</div><div class="num-val ${ac}">${e.actual??'Pending'}</div></div>
+          <div><div class="num-lbl">Previous</div><div class="num-val nd">${e.prev??'—'}</div></div>
+        </div>
+        <div class="plain-box">${getExp(e.event)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleEvt(i){document.getElementById('evt-'+i).classList.toggle('show');}
+
+function renderLean(events){
+  const el=document.getElementById('leanCard');
+  const bull=events.filter(e=>e.country==='US'&&sig(e.actual,e.estimate)==='bullish').length;
+  const bear=events.filter(e=>e.country==='US'&&sig(e.actual,e.estimate)==='bearish').length;
+  if(!events.length){el.className='lean neutral';el.innerHTML='<div class="lean-title">➡️ No major events</div><div class="lean-sub">Low volatility day. Consider sitting out or trading smaller.</div>';}
+  else if(bull>bear){el.className='lean bullish';el.innerHTML='<div class="lean-title">📈 USD Bullish Today</div><div class="lean-sub">SELL EURUSD · SELL GBPUSD · BUY USDJPY · BUY USDCAD</div>';}
+  else if(bear>bull){el.className='lean bearish';el.innerHTML='<div class="lean-title">📉 USD Bearish Today</div><div class="lean-sub">BUY EURUSD · BUY GBPUSD · SELL USDJPY · SELL USDCAD</div>';}
+  else{el.className='lean neutral';el.innerHTML='<div class="lean-title">⏳ Mixed or Pending</div><div class="lean-sub">Signals conflict or not yet released. Check back after 8:30 AM EST.</div>';}
+}
+
+function toggleChk(el){
+  el.classList.toggle('on');
+  const done=document.querySelectorAll('.chk-row.on').length;
+  const total=document.querySelectorAll('.chk-row').length;
+  checkState=Array.from(document.querySelectorAll('.chk-row')).map(r=>r.classList.contains('on'));
+  document.getElementById('vGo').classList.toggle('show',done===total);
+  document.getElementById('vHold').classList.toggle('show',done>0&&done<total);
+  document.getElementById('goTradeBtn').disabled=done<total;
+  if(done===total)addXP(25);
+}
+
+function handleFile(input){
+  pendingFile=input.files[0];
+  if(!pendingFile)return;
+  document.getElementById('uploadZone').classList.add('has-file');
+  document.getElementById('uploadName').textContent=pendingFile.name;
+}
+
+function fileToB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});}
+
+async function submitTrade(){
+  const pair=document.getElementById('fPair').value.trim().toUpperCase();
+  const dir=document.getElementById('fDir').value;
+  const entry=document.getElementById('fEntry').value;
+  const sl=document.getElementById('fSL').value;
+  const tp=document.getElementById('fTP').value;
+  const close=document.getElementById('fClose').value;
+  const result=document.getElementById('fResult').value;
+  const news=document.getElementById('fNews').value.trim();
+  const notes=document.getElementById('fNotes').value.trim();
+  if(!pair||!dir){showToast('Enter pair and direction.');return;}
+  const aiBox=document.getElementById('aiBox');
+  const aiText=document.getElementById('aiText');
+  aiBox.style.display='block';
+  aiText.innerHTML='<span class="spin"></span> Analyzing...';
+  let analysis='';
+  if(pendingFile){
+    try{
+      const b64=await fileToB64(pendingFile);
+      const checks=checkState.map((c,i)=>{const labels=['News confirms direction','Expected vs actual','Chart trend agrees','Clear entry level','Stop loss set'];return(c?'✅':'❌')+' '+labels[i];}).join('\n');
+      const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:pendingFile.type||'image/jpeg',data:b64}},{type:'text',text:`You are a forex trading coach reviewing a screenshot for a beginner.\n\nChecklist:\n${checks}\n\nTrade: ${pair} ${dir} | Entry:${entry||'N/A'} SL:${sl||'N/A'} TP:${tp||'N/A'} Close:${close||'N/A'} Result:${result||'?'} News:${news||'N/A'}\n\nUnder 80 words: 1) What you see 2) One thing done well 3) One thing to improve 4) DISCIPLINED or NEEDS REVIEW. Coach voice, not textbook.`}]}]})});
+      const data=await res.json();
+      analysis=data.content?.[0]?.text||'Could not analyze.';
+    }catch(e){analysis='Analysis failed — saved without AI feedback.';}
+  }else{aiBox.style.display='none';}
+  aiText.textContent=analysis;
+  const trade={id:Date.now(),time:new Date().toLocaleString('en-CA'),pair,dir,entry,sl,tp,close,result:result||'OPEN',news,notes,checks:[...checkState],analysis,checksScore:checkState.filter(Boolean).length};
+  trades.unshift(trade);
+  localStorage.setItem('wtw_trades',JSON.stringify(trades));
+  // Sync to Google Sheets
+  fetch(SHEET_URL,{method:'POST',body:JSON.stringify({...trade,xp}),headers:{'Content-Type':'application/json'}}).then(()=>showToast('Saved + synced to Sheets ✓')).catch(()=>showToast('Saved locally — sync failed'));
+  if(result==='WIN')addXP(50);
+  else if(result==='LOSS'){xp=Math.max(0,xp-10);renderXP();}
+
+  clearLog();
+}
+
+function clearLog(){
+  ['fPair','fDir','fEntry','fSL','fTP','fClose','fResult','fNews','fNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('uploadZone').classList.remove('has-file');
+  document.getElementById('uploadName').textContent='';
+  document.getElementById('fileInput').value='';
+  document.getElementById('aiBox').style.display='none';
+  pendingFile=null;
+  document.querySelectorAll('.chk-row').forEach(r=>r.classList.remove('on'));
+  checkState=[];
+  document.getElementById('vGo').classList.remove('show');
+  document.getElementById('vHold').classList.remove('show');
+  document.getElementById('goTradeBtn').disabled=true;
+}
+
+function renderJournal(){
+  const wins=trades.filter(t=>t.result==='WIN').length;
+  const losses=trades.filter(t=>t.result==='LOSS').length;
+  document.getElementById('sTrades').textContent=trades.length;
+  document.getElementById('sWins').textContent=wins;
+  document.getElementById('sLosses').textContent=losses;
+  const el=document.getElementById('tradeList');
+  if(!trades.length){el.innerHTML='<div class="empty">No trades yet.<br>Complete the checklist and log your first trade.</div>';return;}
+  el.innerHTML=trades.map(t=>`<div class="trade-item">
+    <div class="trade-header"><span class="trade-pair">${t.pair} ${t.dir}</span><span class="trade-badge ${t.result}">${t.result}</span></div>
+    <div class="trade-meta">${t.time} · E:${t.entry||'—'} SL:${t.sl||'—'} TP:${t.tp||'—'}${t.news?' · '+t.news:''}</div>
+    <div class="check-dots">${(t.checks||[]).map(c=>`<div class="dot ${c?'on':'off'}"></div>`).join('')}<span class="dot-label">${t.checksScore||0}/5</span></div>
+    ${t.analysis?`<div class="trade-ai">${t.analysis}</div>`:''}
+  </div>`).join('');
+}
+
+function exportCSV(){
+  if(!trades.length){showToast('No trades to export.');return;}
+  const rows=['Time,Pair,Dir,Entry,SL,TP,Close,Result,Checks,News,Notes,AI'];
+  trades.forEach(t=>rows.push([t.time,t.pair,t.dir,t.entry,t.sl,t.tp,t.close,t.result,(t.checksScore||0)+'/5',t.news||'',t.notes||'','"'+(t.analysis||'').replace(/"/g,"'")+'"'].join(',')));
+  const b=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='we-the-wave-trades.csv';a.click();
+  showToast('Exported ✓');
+}
+
+async function doAsk(){const q=document.getElementById('askQ').value.trim();if(!q)return;await quickAsk(q);}
+async function quickAsk(q){
+  document.getElementById('askQ').value=q;
+  const box=document.getElementById('askBox');const txt=document.getElementById('askText');
+  box.style.display='block';txt.innerHTML='<span class="spin"></span> Thinking...';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`Forex trading coach for a beginner in Quebec, Canada learning fundamentals-first. Plain language, like talking to a friend. No jargon without explanation. Under 80 words. Direct.\n\nQuestion: ${q}`}]})});
+    const data=await res.json();txt.textContent=data.content?.[0]?.text||'Could not get answer.';
+  }catch(e){txt.textContent='Connection error. Try again.';}
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+</script>
+</body>
+</html>
