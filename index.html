@@ -577,6 +577,10 @@ function renderJournal(){
     <div class="check-dots">${(t.checks||[]).map(c=>`<div class="cdot ${c?'on':'off'}"></div>`).join('')}<span class="cdot-lbl">${t.score||0}/5 checks</span></div>
     ${t.notes?`<div class="trade-notes">${t.notes}</div>`:''}
     ${t.analysis?`<div class="trade-notes" style="color:var(--gold);border-left-color:var(--gold);">🤖 ${t.analysis}</div>`:''}
+    ${t.result==='OPEN'?`<div style="margin-top:10px;display:flex;gap:8px;">
+      <button onclick="closeTrade('${t.id}','WIN')" style="flex:1;padding:9px;background:var(--green-dim);border:1px solid var(--green);border-radius:8px;color:var(--green);font-size:13px;font-weight:700;cursor:pointer;">✅ Close WIN</button>
+      <button onclick="closeTrade('${t.id}','LOSS')" style="flex:1;padding:9px;background:var(--red-dim);border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:13px;font-weight:700;cursor:pointer;">❌ Close LOSS</button>
+    </div>`:''}
   </div>`).join('');
 }
 
@@ -599,6 +603,25 @@ async function qa(q){
     const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`Forex trading coach for a complete beginner in Quebec, Canada learning fundamentals-first. Plain language like talking to a friend. No jargon without explanation. Under 80 words. Direct.\n\nQuestion: ${q}`}]})});
     const data=await r.json();txt.textContent=data.content?.[0]?.text||'Could not get answer.';
   }catch(e){txt.textContent='Connection error. Try again.';}
+}
+
+// CLOSE TRADE
+async function closeTrade(id, result){
+  const idx=trades.findIndex(t=>String(t.id)===String(id));
+  if(idx<0)return;
+  const notes=prompt('Any notes on this trade? (optional)') || '';
+  trades[idx].result=result;
+  trades[idx].closedAt=new Date().toLocaleString('en-CA');
+  if(notes)trades[idx].notes=(trades[idx].notes?trades[idx].notes+' | ':'')+notes;
+  localStorage.setItem('wtw_trades',JSON.stringify(trades));
+  if(result==='WIN')addXP(50);
+  else if(result==='LOSS')addXP(-10);
+  // Sync update to Sheets
+  try{
+    await fetch(SHEET,{method:'POST',body:JSON.stringify({...trades[idx],action:'update'}),headers:{'Content-Type':'application/json'}});
+    showToast('Trade closed + synced ✓');
+  }catch(e){showToast('Trade closed ✓');}
+  renderJournal();
 }
 
 // TOAST
