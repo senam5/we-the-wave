@@ -347,6 +347,7 @@ select.field option { background:var(--surface); }
 <script>
 const FINNHUB='d9hlsbpr01qjmfd9gqfgd9hlsbpr01qjmfd9gqg0';
 const SHEET='https://script.google.com/macros/s/AKfycbx4McccOaTPqg1O6RjDmPtTPX7HeFF8Q1z7PcOL705U1roGHSlUs3CVUDRdNUO2W2TT_Q/exec';
+const AI_PROXY='https://script.google.com/macros/s/AKfycbweWDWWFclvWWKij0n_8U-7QoorEkpHfuASJ97ZiFSc7flhFqBtkPwvqj8-Y51Pw_PShw/exec';
 let xp=parseInt(localStorage.getItem('wtw_xp')||'0');
 let trades=JSON.parse(localStorage.getItem('wtw_trades')||'[]');
 let manEvts=JSON.parse(localStorage.getItem('wtw_evts')||'[]');
@@ -529,10 +530,9 @@ async function logTrade(){
     aiTxt.innerHTML='<span class="spin"></span> Analyzing...';
     try{
       const b64=await fileToB64(pendingFile);
-      const checks=chkState.map((c,i)=>{const labels=['News confirms direction','Expected vs actual','Chart trend agrees','Clear entry level','Stop loss set'];return(c?'✅':'❌')+' '+labels[i];}).join('\n');
-      const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:(pendingFile.type&&pendingFile.type!==''?pendingFile.type:'image/png'),data:b64}},{type:'text',text:`Forex trading coach reviewing a screenshot for a beginner.\n\nChecklist:\n${checks}\n\nTrade: ${pair} ${dir} | News: ${news||'N/A'} | Result: ${result||'?'}\n\nUnder 80 words: 1) What you see 2) One thing done well 3) One thing to improve 4) DISCIPLINED or NEEDS REVIEW. Coach voice.`}]}]})});
+      const r=await fetch(AI_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'coach',pair,dir,news,result,checks:chkState,image_b64:b64,media_type:(pendingFile.type&&pendingFile.type!==''?pendingFile.type:'image/png')})});
       const data=await r.json();
-      analysis=data.content?.[0]?.text||'Could not analyze.';
+      analysis=data.text||data.error||'Could not analyze.';
       aiTxt.textContent=analysis;
     }catch(e){analysis='Analysis failed.';aiTxt.textContent=analysis;}
   }
@@ -600,8 +600,8 @@ async function qa(q){
   const box=document.getElementById('askBox');const txt=document.getElementById('askTxt');
   txt.innerHTML='<span class="spin"></span> Thinking...';
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`Forex trading coach for a complete beginner in Quebec, Canada learning fundamentals-first. Plain language like talking to a friend. No jargon without explanation. Under 80 words. Direct.\n\nQuestion: ${q}`}]})});
-    const data=await r.json();txt.textContent=data.content?.[0]?.text||'Could not get answer.';
+    const r=await fetch(AI_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'ask',question:q})});
+    const data=await r.json();txt.textContent=data.text||data.error||'Could not get answer.';
   }catch(e){txt.textContent='Connection error. Try again.';}
 }
 
