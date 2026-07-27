@@ -530,7 +530,7 @@ async function logTrade(){
     aiTxt.innerHTML='<span class="spin"></span> Analyzing...';
     try{
       const b64=await fileToB64(pendingFile);
-      const r=await fetch(AI_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'coach',pair,dir,news,result,checks:chkState,image_b64:b64,media_type:(pendingFile.type&&pendingFile.type!==''?pendingFile.type:'image/png')})});
+      const r=await fetch(AI_PROXY,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'coach',pair,dir,news,result,checks:chkState,image_b64:b64,media_type:(pendingFile.type&&pendingFile.type!==''?pendingFile.type:'image/png')})});
       const data=await r.json();
       analysis=data.text||data.error||'Could not analyze.';
       aiTxt.textContent=analysis;
@@ -542,7 +542,7 @@ async function logTrade(){
   if(result==='WIN')addXP(50);
   else if(result==='LOSS')addXP(-10);
   // Sync to Sheets
-  try{await fetch(SHEET,{method:'POST',body:JSON.stringify({...trade,analysis}),headers:{'Content-Type':'application/json'}});showToast('Saved + synced ✓');}
+  try{await fetch(SHEET,{method:'POST',body:JSON.stringify({...trade,analysis}),headers:{'Content-Type':'text/plain;charset=utf-8'}});showToast('Saved + synced ✓');}
   catch(e){showToast('Saved locally ✓');}
   clearLog();
   switchPage('journal');
@@ -600,7 +600,7 @@ async function qa(q){
   const box=document.getElementById('askBox');const txt=document.getElementById('askTxt');
   txt.innerHTML='<span class="spin"></span> Thinking...';
   try{
-    const r=await fetch(AI_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'ask',question:q})});
+    const r=await fetch(AI_PROXY,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'ask',question:q})});
     const data=await r.json();txt.textContent=data.text||data.error||'Could not get answer.';
   }catch(e){txt.textContent='Connection error. Try again.';}
 }
@@ -618,7 +618,7 @@ async function closeTrade(id, result){
   else if(result==='LOSS')addXP(-10);
   // Sync update to Sheets
   try{
-    await fetch(SHEET,{method:'POST',body:JSON.stringify({...trades[idx],action:'update'}),headers:{'Content-Type':'application/json'}});
+    await fetch(SHEET,{method:'POST',body:JSON.stringify({...trades[idx],action:'update'}),headers:{'Content-Type':'text/plain;charset=utf-8'}});
     showToast('Trade closed + synced ✓');
   }catch(e){showToast('Trade closed ✓');}
   renderJournal();
